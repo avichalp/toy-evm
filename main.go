@@ -4,8 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"math"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/holiman/uint256"
 )
@@ -23,13 +24,14 @@ func NewStack() *Stack {
 	}
 }
 
-func (s *Stack) validStackItem(item uint256.Int) bool {
-	maxValue := math.Pow(2, 256) - 1
-	return item.Lt(uint256.NewInt(0)) || item.Gt(uint256.NewInt(uint64(maxValue)))
+func invalidWord(word uint256.Int) bool {
+	min := uint256.NewInt(0)
+	max := uint256.NewInt(uint64(math.Pow(2, 256) - 1))
+	return word.Lt(min) || word.Gt(max)
 }
 
 func (s *Stack) Push(item uint256.Int) {
-	if !s.validStackItem(item) {
+	if invalidWord(item) {
 		panic("Stack item too big")
 	}
 	if len(s.stack)+1 > s.maxDepth {
@@ -45,6 +47,39 @@ func (s *Stack) Pop() (item uint256.Int) {
 	item = s.stack[len(s.stack)-1]
 	slices.Delete(s.stack, len(s.stack)-1, len(s.stack))
 	return
+}
+
+type Memory struct {
+	memory []uint8
+}
+
+func NewMemory() *Memory {
+	m := make([]uint8, 0)
+	return &Memory{memory: m}
+}
+
+func (m *Memory) Store(offset uint64, value uint8) {
+	/* if offset < 0 || offset > uint64(math.Pow(2, 256))-1 {
+		panic(fmt.Sprintf("Invalid memory access %d", offset))
+	} */
+	if value < 0 || value > math.MaxUint8 {
+		panic(fmt.Sprintf("Invalid memory value %d", value))
+	}
+
+	// expand if needed
+	if offset >= uint64(len(m.memory)) {
+		for i := 0; i < int(offset-uint64(len(m.memory))+1); i++ {
+			m.memory = append(m.memory, 0)
+		}
+	}
+	m.memory[offset] = value
+}
+
+func (m *Memory) Load(offset uint64) uint8 {
+	if offset >= uint64(len(m.memory)) {
+		return 0
+	}
+	return m.memory[offset]
 }
 
 func decodeOpcode(ctx context.Context) context.Context {
