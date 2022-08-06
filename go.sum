@@ -1,4 +1,6 @@
 github.com/holiman/uint256 v1.2.0 h1:gpSYcPLWGv4sG43I2mVLiDZCNDh/EpGjSk8tmtxitHM=
 github.com/holiman/uint256 v1.2.0/go.mod h1:y4ga/t+u+Xwd7CpDgZESaRcWy0I7XMlTMA25ApIH5Jw=
+github.com/status-im/keycard-go v0.0.0-20220804094519-059bc140cef1 h1:65QWh3P3a6wlV2QN38/UzMpDbOzugjYuHSuog5D3810=
+github.com/status-im/keycard-go v0.0.0-20220804094519-059bc140cef1/go.mod h1:97vT0Rym0wCnK4B++hNA3nCetr0Mh1KXaVxzSt1arjg=
 golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e h1:+WEEuIdZHnUeJJmEUjyYC2gfUMj69yZXw17EnHg/otA=
 golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e/go.mod h1:Kr81I6Kryrl9sr8s2FK3vxD90NdsKWRuOIl2O4CvYbA=
