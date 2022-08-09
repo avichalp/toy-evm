@@ -3,20 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/holiman/uint256"
 	"github.com/status-im/keycard-go/hexutils"
 )
 
 func decodeOpcode(ctx *ExecutionCtx) (*Instruction, error) {
 	fmt.Println("decoding opcode")
-	if ctx.pc < 0 {
-		panic(fmt.Sprintf("invalid code offset: code: %v, pc: %d\n", ctx.code, ctx.pc))
-	}
 	// Yellow paper section 9.4.1 (Machine State)
-	if ctx.pc >= len(ctx.code) {
-		inst, ok := InstructionByOpcode[*uint256.NewInt(0)]
+	if ctx.pc >= uint64(len(ctx.code)) {
+		inst, ok := InstructionByOpcode[0]
 		if !ok {
 			panic("Cannot find STOP OPCODE in Instruction Registry")
 		}
@@ -25,7 +20,7 @@ func decodeOpcode(ctx *ExecutionCtx) (*Instruction, error) {
 
 	opcode := ctx.ReadCode(1)
 	fmt.Println("finding instruction for opcode", opcode)
-	inst, ok := InstructionByOpcode[*opcode]
+	inst, ok := InstructionByOpcode[opcode]
 	if !ok {
 		return nil, fmt.Errorf("inst not found for opcode %d", opcode)
 
@@ -81,11 +76,12 @@ func run(code, calldata string) {
 
 type ExecutionCtx struct {
 	code       []byte
-	pc         int
+	pc         uint64
 	stack      *Stack
 	memory     *Memory
 	stopped    bool
 	returndata []byte
+	jumpdests  map[uint64]uint64
 }
 
 func NewExecutionCtx(code []byte, stack *Stack, memory *Memory) *ExecutionCtx {
@@ -102,31 +98,40 @@ func (ctx *ExecutionCtx) Stop() {
 	ctx.stopped = true
 }
 
+/* func (ctx *ExecutionCtx) ValidJumpDestination() map[uint64]uint64 {
+	dests := make(map[uint64]uint64)
+	i := 0
+	for i < len(ctx.code) {
+		currentOP := ctx.code[i]
+
+	}
+} */
+
 // ReadCode returns the next numBytes from the code
 // buffer as an integer and advances pc by numBytes
-func (ctx *ExecutionCtx) ReadCode(numBytes int) *uint256.Int {
+func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {
 	codeSegment := ctx.code[ctx.pc : ctx.pc+numBytes]
-	codeSegmentHex := hexutils.BytesToHex(codeSegment)
+	// codeSegmentHex := hexutils.BytesToHex(codeSegment)
 
 	codeHex := fmt.Sprintf("0x%x", ctx.code)
-	fmt.Printf("reading code: %s, bytes: %d, segment: %s\n", codeHex, numBytes, codeSegmentHex)
+	fmt.Printf("reading code: %s, bytes: %d, segment: %s\n", codeHex, numBytes, codeSegment)
 
 	// removing leading zeros
-	codeSegmentHex = strings.TrimLeft(codeSegmentHex, "0")
+	// codeSegmentHex = strings.TrimLeft(codeSegmentHex, "0")
 
 	// increment the program counter
 	ctx.pc += numBytes
 
 	// default hex -> decimal conversion for 0
-	if codeSegmentHex == "" {
-		return uint256.NewInt(0)
+	/* if codeSegmentHex == "" {
+		return 0
 	}
-
-	value, err := uint256.FromHex("0x" + codeSegmentHex)
+	*/
+	/* value, err := uint256.FromHex("0x" + codeSegmentHex)
 	if err != nil {
 		panic(err)
-	}
-	return value
+	} */
+	return codeSegment[0]
 
 }
 
@@ -135,9 +140,13 @@ func (ctx *ExecutionCtx) SetReturnData(offset, length uint64) {
 	ctx.returndata = ctx.memory.LoadRange(offset, length)
 }
 
+func (ctx *ExecutionCtx) SetProgramCounter(pc uint64) {
+	ctx.pc = pc
+}
+
 type ExecuteFn func(*ExecutionCtx)
 type Instruction struct {
-	opcode    *uint256.Int
+	opcode    byte
 	name      string
 	executeFn ExecuteFn
 }

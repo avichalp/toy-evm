@@ -9,9 +9,9 @@ import (
 )
 
 var Instructions = make([]*Instruction, 0)
-var InstructionByOpcode = make(map[uint256.Int]*Instruction)
+var InstructionByOpcode = make(map[byte]*Instruction)
 
-func RegisterInstruction(opcode *uint256.Int, name string, executeFn ExecuteFn) *Instruction {
+func RegisterInstruction(opcode byte, name string, executeFn ExecuteFn) *Instruction {
 	inst := &Instruction{
 		opcode:    opcode,
 		name:      name,
@@ -19,8 +19,8 @@ func RegisterInstruction(opcode *uint256.Int, name string, executeFn ExecuteFn) 
 	}
 	Instructions = append(Instructions, inst)
 
-	InstructionByOpcode[*opcode] = inst
-	fmt.Printf("registering %s: %v\n", opcode, inst)
+	InstructionByOpcode[opcode] = inst
+	fmt.Printf("registering %d: %v\n", opcode, inst)
 	return inst
 }
 
@@ -32,19 +32,15 @@ func main() {
 	flag.Parse()
 	fmt.Printf("code: %s, calldata %s\n", code, calldata)
 
-	RegisterInstruction(uint256.NewInt(0), "STOP", func(ctx *ExecutionCtx) { ctx.Stop() })
-
-	if pushOP, err := uint256.FromHex("0x60"); err == nil {
-		RegisterInstruction(
-			pushOP,
-			"PUSH1",
-			func(ctx *ExecutionCtx) {
-				ctx.stack.Push(ctx.ReadCode(1))
-			})
-	}
-
+	RegisterInstruction(0x0, "STOP", func(ctx *ExecutionCtx) { ctx.Stop() })
 	RegisterInstruction(
-		uint256.NewInt(1),
+		0x60,
+		"PUSH1",
+		func(ctx *ExecutionCtx) {
+			ctx.stack.Push(uint256.NewInt(uint64(ctx.ReadCode(1))))
+		})
+	RegisterInstruction(
+		0x01,
 		"ADD",
 		func(ctx *ExecutionCtx) {
 			op1, op2 := ctx.stack.Pop(), ctx.stack.Pop()
@@ -53,9 +49,8 @@ func main() {
 			result.AddMod(op1, op2, mod)
 			ctx.stack.Push(result)
 		})
-
 	RegisterInstruction(
-		uint256.NewInt(2),
+		0x02,
 		"MUL",
 		func(ctx *ExecutionCtx) {
 			op1, op2 := ctx.stack.Pop(), ctx.stack.Pop()
@@ -64,13 +59,8 @@ func main() {
 			result.MulMod(op1, op2, mod)
 			ctx.stack.Push(result)
 		})
-
-	MSTORE8OP, err := uint256.FromHex("0x53")
-	if err != nil {
-		panic("Cannot register MSTORE8 instruction")
-	}
 	RegisterInstruction(
-		MSTORE8OP,
+		0x53,
 		"MSTORE8",
 		func(ctx *ExecutionCtx) {
 			op1, op2 := ctx.stack.Pop(), ctx.stack.Pop()
@@ -80,18 +70,21 @@ func main() {
 			ctx.memory.Store(op1.Uint64(), uint8(op2.Uint64()))
 		},
 	)
-
-	RETURNOP, err := uint256.FromHex("0xf3")
-	if err != nil {
-		panic("Cannot register RETURN instruction")
-	}
 	RegisterInstruction(
-		RETURNOP,
+		0xF3,
 		"RETURN",
 		func(ctx *ExecutionCtx) {
 			op1, op2 := ctx.stack.Pop(), ctx.stack.Pop()
 			// TODO: these arguments should be uint256
 			ctx.SetReturnData(op1.Uint64(), op2.Uint64())
+		},
+	)
+	RegisterInstruction(
+		0x56,
+		"JUMP",
+		func(ctx *ExecutionCtx) {
+			pc := ctx.stack.Pop().Uint64()
+			ctx.SetProgramCounter(pc)
 		},
 	)
 
