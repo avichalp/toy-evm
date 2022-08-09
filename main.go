@@ -59,17 +59,7 @@ func main() {
 			result.MulMod(op1, op2, mod)
 			ctx.stack.Push(result)
 		})
-	RegisterInstruction(
-		0x53,
-		"MSTORE8",
-		func(ctx *ExecutionCtx) {
-			op1, op2 := ctx.stack.Pop(), ctx.stack.Pop()
-			// MSTORE8 pops an offset and a word from the stack,
-			// and stores the lowest byte of that word in memory
-			op2.Mod(op2, uint256.NewInt(256))
-			ctx.memory.Store(op1.Uint64(), uint8(op2.Uint64()))
-		},
-	)
+
 	RegisterInstruction(
 		0xF3,
 		"RETURN",
@@ -84,8 +74,69 @@ func main() {
 		"JUMP",
 		func(ctx *ExecutionCtx) {
 			pc := ctx.stack.Pop().Uint64()
+			fmt.Printf("valid jump dests: %v\n", ctx.jumpdests)
+			if _, ok := ctx.jumpdests[pc]; !ok {
+				panic(fmt.Errorf("invalid jump destination %d", pc))
+			}
 			ctx.SetProgramCounter(pc)
 		},
+	)
+	RegisterInstruction(
+		0x57,
+		"JUMPI",
+		func(ctx *ExecutionCtx) {
+			pc, cond := ctx.stack.Pop().Uint64(), ctx.stack.Pop()
+			if cond.Cmp(uint256.NewInt(0)) != 0 {
+				if _, ok := ctx.jumpdests[pc]; !ok {
+					panic(fmt.Errorf("invalid jump destination %d", pc))
+				}
+				ctx.SetProgramCounter(pc)
+			}
+		},
+	)
+	RegisterInstruction(
+		0x51,
+		"MLOAD",
+		func(ctx *ExecutionCtx) {
+			offset := ctx.stack.Pop()
+			ctx.stack.Push(ctx.memory.LoadWord(offset.Uint64()))
+		},
+	)
+	RegisterInstruction(
+		0x53,
+		"MSTORE8",
+		func(ctx *ExecutionCtx) {
+			op1, op2 := ctx.stack.Pop(), ctx.stack.Pop()
+			// MSTORE8 pops an offset and a word from the stack,
+			// and stores the lowest byte of that word in memory
+			op2.Mod(op2, uint256.NewInt(256))
+			ctx.memory.Store(op1.Uint64(), uint8(op2.Uint64()))
+		},
+	)
+	RegisterInstruction(
+		0x52,
+		"MSTORE",
+		func(ctx *ExecutionCtx) {
+			offset, value := ctx.stack.Pop(), ctx.stack.Pop()
+			ctx.memory.StoreWord(offset.Uint64(), *value)
+		},
+	)
+	RegisterInstruction(
+		0x58,
+		"PC",
+		func(ctx *ExecutionCtx) { ctx.stack.Push(uint256.NewInt(ctx.pc)) },
+	)
+	RegisterInstruction(
+		0x59,
+		"MSIZE",
+		func(ctx *ExecutionCtx) {
+			ctx.stack.Push(uint256.NewInt(ctx.memory.ActiveWords() * 32))
+		},
+	)
+	RegisterInstruction(
+		0x5B,
+		"JUMPDEST",
+		func(_ *ExecutionCtx) {},
 	)
 
 	fmt.Printf("\n")

@@ -1,5 +1,9 @@
 package main
 
+import (
+	"github.com/holiman/uint256"
+)
+
 type Memory struct {
 	memory []uint8
 }
@@ -9,19 +13,28 @@ func NewMemory() *Memory {
 	return &Memory{memory: m}
 }
 
-func (m *Memory) Store(offset uint64, value uint8) {
-	/* if offset < 0 || offset > uint64(math.Pow(2, 256))-1 {
-		panic(fmt.Sprintf("Invalid memory access %d", offset))
-	} */
-
-	// expand if needed
-	// TODO: the offset should be uint256 not uint64!
+func (m *Memory) expandIfNeeded(offset uint64) {
 	if offset >= uint64(len(m.memory)) {
 		for i := 0; i < int(offset-uint64(len(m.memory))+1); i++ {
 			m.memory = append(m.memory, 0)
 		}
 	}
+}
+
+func (m *Memory) Store(offset uint64, value uint8) {
+	m.expandIfNeeded(offset)
 	m.memory[offset] = value
+}
+
+func (m *Memory) StoreWord(offset uint64, value uint256.Int) {
+	m.expandIfNeeded(offset + 31)
+	zero := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	copy(m.memory[offset:offset+32], zero)
+	value.WriteToSlice(m.memory[offset : offset+32])
+	// similar function in geth
+	// https://github.com/ethereum/go-ethereum/blob/a69d4b273d1164637e0edb2cbad2e51325b7e897/core/vm/memory.go#L52-L62
+
 }
 
 func (m *Memory) Load(offset uint64) uint8 {
@@ -37,4 +50,12 @@ func (m *Memory) LoadRange(offset uint64, length uint64) []byte {
 		loaded = append(loaded, m.Load(o))
 	}
 	return loaded
+}
+
+func (m *Memory) LoadWord(offset uint64) *uint256.Int {
+	return uint256.NewInt(0).SetBytes(m.LoadRange(offset, 32))
+}
+
+func (m *Memory) ActiveWords() uint64 {
+	return uint64(len(m.memory) / 32)
 }
