@@ -59,7 +59,18 @@ func main() {
 			result.MulMod(op1, op2, mod)
 			ctx.stack.Push(result)
 		})
-
+	RegisterInstruction(
+		0x03,
+		"SUB",
+		func(ctx *ExecutionCtx) {
+			op1, op2 := ctx.stack.Pop(), ctx.stack.Pop()
+			result := uint256.NewInt(0)
+			mod := uint256.NewInt(uint64(math.Pow(2, 256)))
+			result.Sub(op1, op2)
+			result.Mod(result, mod)
+			ctx.stack.Push(result)
+		},
+	)
 	RegisterInstruction(
 		0xF3,
 		"RETURN",
@@ -138,7 +149,47 @@ func main() {
 		"JUMPDEST",
 		func(_ *ExecutionCtx) {},
 	)
-
+	RegisterInstruction(
+		0x80,
+		"DUP1",
+		func(ctx *ExecutionCtx) {
+			ctx.stack.Push(ctx.stack.Peek(0))
+		},
+	)
+	RegisterInstruction(
+		0x81,
+		"DUP2",
+		func(ctx *ExecutionCtx) {
+			ctx.stack.Push(ctx.stack.Peek(1))
+		},
+	)
+	RegisterInstruction(
+		0x82,
+		"DUP3",
+		func(ctx *ExecutionCtx) {
+			ctx.stack.Push(ctx.stack.Peek(2))
+		},
+	)
+	RegisterInstruction(
+		0x90,
+		"SWAP1",
+		func(ctx *ExecutionCtx) {
+			ctx.stack.Swap(1)
+		},
+	)
+	RegisterInstruction(
+		0x35,
+		"CALLDATALOAD",
+		func(ctx *ExecutionCtx) {
+			// todo: theoritially there is not limit to calldata
+			// is uint64 safe size for calldata's byte array?
+			// geth limits the size of calldata to uint64
+			// https://github.com/ethereum/go-ethereum/blob/440c9fcf75d9d5383b72646a65d5e21fa7ab6a26/core/vm/instructions.go
+			if offset, overflow := ctx.stack.Pop().Uint64WithOverflow(); !overflow {
+				ctx.stack.Push(ctx.calldata.ReadWord(offset))
+			}
+		},
+	)
 	fmt.Printf("\n")
 
 	run(code, calldata)

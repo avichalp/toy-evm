@@ -47,7 +47,7 @@ func run(code, calldata string) {
 			return
 		default:
 			// no. of execution check
-			if ectx.numSteps >= 3 {
+			if ectx.numSteps >= 200 {
 				fmt.Println("out of gas", ectx.numSteps)
 				cancel()
 				return
@@ -64,7 +64,7 @@ func run(code, calldata string) {
 			fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)
 			fmt.Printf("stack: %v\n", ectx.stack.stack)
 			fmt.Printf("memory: %v\n", ectx.memory.memory)
-			fmt.Printf("return: %v\n", ectx.returndata)
+			fmt.Printf("returndata: %v\n", ectx.returndata)
 			fmt.Printf("\n")
 		}
 	}
@@ -75,7 +75,7 @@ type ExecutionCtx struct {
 	pc         uint64
 	stack      *Stack
 	memory     *Memory
-	stopped    bool
+	calldata   Calldata
 	returndata []byte
 	jumpdests  map[uint64]uint64
 	numSteps   int
@@ -91,7 +91,6 @@ func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []
 		pc:        0,
 		stack:     stack,
 		memory:    memory,
-		stopped:   false,
 		jumpdests: make(map[uint64]uint64),
 		numSteps:  0,
 	}

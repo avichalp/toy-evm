@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/holiman/uint256"
@@ -43,4 +44,30 @@ func (s *Stack) Pop() (item *uint256.Int) {
 	item = s.stack[len(s.stack)-1]
 	s.stack = slices.Delete(s.stack, len(s.stack)-1, len(s.stack))
 	return
+}
+
+// Peek returns a stack element without popping it
+// eg: Peek(0) will return the top of the stack
+func (s *Stack) Peek(i uint16) (item *uint256.Int) {
+	// there can only be 1024 stack frames
+	length := uint16(len(s.stack))
+	if length < i {
+		panic(fmt.Errorf("stack underflow %d", i))
+	}
+
+	return s.stack[length-1-i]
+}
+
+// Swap the top of the stack with the i+1th element
+func (s *Stack) Swap(i uint16) {
+	if i == 0 {
+		return
+	}
+	length := uint16(len(s.stack))
+
+	if length < i {
+		panic(fmt.Errorf("stack underflow %d", i))
+	}
+
+	s.stack[length-1], s.stack[length-1-i] = s.stack[length-1-i], s.stack[length-1]
 }
