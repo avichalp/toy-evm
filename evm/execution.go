@@ -6,7 +6,6 @@ import (
 	"math"
 
 	"github.com/holiman/uint256"
-	"github.com/status-im/keycard-go/hexutils"
 )
 
 var Instructions = make([]*Instruction, 0)
@@ -34,27 +33,22 @@ func decodeOpcode(ctx *ExecutionCtx) (*Instruction, error) {
 	return inst, nil
 }
 
-func Run(code, calldata string, steps int) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	stack, memory := NewStack(), NewMemory()
-	ectx := NewExecutionCtx(ctx, cancel, hexutils.HexToBytes(code), stack, memory)
+func Run(ectx *ExecutionCtx) {
 
 	ectx.ValidJumpDestination()
 	fmt.Printf("set valid jump destination %v \n", ectx.jumpdests)
 
 	for {
 		select {
-		case <-ctx.Done():
-			fmt.Println("execution complete", ectx.numSteps)
-			cancel()
+		case <-ectx.context.Done():
+			fmt.Println("execution complete", ectx.steps)
+			ectx.cancel()
 			return
 		default:
 			// no. of execution check
-			if ectx.numSteps >= steps {
-				fmt.Println("out of gas", ectx.numSteps)
-				cancel()
+			if ectx.steps < 0 {
+				fmt.Println("out of gas", ectx.steps)
+				ectx.cancel()
 				return
 			}
 
@@ -65,7 +59,7 @@ func Run(code, calldata string, steps int) {
 			}
 
 			inst.executeFn(ectx)
-			ectx.numSteps++
+			ectx.steps--
 			fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)
 			fmt.Printf("stack: %v\n", ectx.stack.stack)
 			fmt.Printf("memory: %v\n", ectx.memory.memory)
@@ -83,21 +77,22 @@ type ExecutionCtx struct {
 	calldata   Calldata
 	returndata []byte
 	jumpdests  map[uint64]uint64
-	numSteps   int
+	steps      int
 	context    context.Context
 	cancel     context.CancelFunc
 }
 
-func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []byte, stack *Stack, memory *Memory) *ExecutionCtx {
+func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []byte, stack *Stack, memory *Memory, steps int) *ExecutionCtx {
 	return &ExecutionCtx{
-		context:   context,
-		cancel:    cancel,
-		code:      code,
-		pc:        0,
-		stack:     stack,
-		memory:    memory,
-		jumpdests: make(map[uint64]uint64),
-		numSteps:  0,
+		context:    context,
+		cancel:     cancel,
+		code:       code,
+		pc:         0,
+		stack:      stack,
+		memory:     memory,
+		returndata: make([]byte, 0),
+		jumpdests:  make(map[uint64]uint64),
+		steps:      steps,
 	}
 }
 

@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-
 	"github.com/avichalp/toy-evm/evm"
+	"github.com/status-im/keycard-go/hexutils"
 )
 
 func main() {
@@ -21,5 +22,15 @@ func main() {
 
 	evm.Init()
 	fmt.Printf("\n")
-	evm.Run(code, calldata, steps)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	ectx := evm.NewExecutionCtx(
+		ctx,
+		cancel,
+		hexutils.HexToBytes(code),
+		evm.NewStack(),
+		evm.NewMemory(),
+		steps,
+	)
+	evm.Run(ectx)
 }
