@@ -1,4 +1,4 @@
-package main
+package evm
 
 import (
 	"github.com/holiman/uint256"
