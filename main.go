@@ -121,7 +121,7 @@ func main() {
 			// MSTORE8 pops an offset and a word from the stack,
 			// and stores the lowest byte of that word in memory
 			op2.Mod(op2, uint256.NewInt(256))
-			ctx.memory.Store(op1.Uint64(), uint8(op2.Uint64()))
+			ctx.memory.StoreByte(op1.Uint64(), uint8(op2.Uint64()))
 		},
 	)
 	RegisterInstruction(

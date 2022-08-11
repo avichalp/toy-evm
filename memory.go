@@ -21,7 +21,7 @@ func (m *Memory) expandIfNeeded(offset uint64) {
 	}
 }
 
-func (m *Memory) Store(offset uint64, value uint8) {
+func (m *Memory) StoreByte(offset uint64, value uint8) {
 	m.expandIfNeeded(offset)
 	m.memory[offset] = value
 }
@@ -37,7 +37,13 @@ func (m *Memory) StoreWord(offset uint64, value uint256.Int) {
 
 }
 
-func (m *Memory) Load(offset uint64) uint8 {
+func (m *Memory) Store(offset uint64, size uint64, value uint256.Int) {
+	// words to write: size / 32 if size is a multiple of 32 -> Store Word
+	// store remaining bytes using StoreByte remainder of size/32 times
+	value.Bytes()
+}
+
+func (m *Memory) LoadByte(offset uint64) uint8 {
 	if offset >= uint64(len(m.memory)) {
 		return 0
 	}
@@ -47,7 +53,7 @@ func (m *Memory) Load(offset uint64) uint8 {
 func (m *Memory) LoadRange(offset uint64, length uint64) []byte {
 	loaded := make([]byte, 0)
 	for o := offset; o < offset+length; o++ {
-		loaded = append(loaded, m.Load(o))
+		loaded = append(loaded, m.LoadByte(o))
 	}
 	return loaded
 }
