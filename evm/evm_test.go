@@ -2,10 +2,10 @@ package evm
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/holiman/uint256"
-	"github.com/status-im/keycard-go/hexutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func TestRunSucess(t *testing.T) {
 			// 60 01
 			// 60 00
 			// f3
-			code:  hexutils.HexToBytes("600660070260005360016000f3"),
+			code:  HexToBytes("600660070260005360016000f3"),
 			steps: 8,
 			expected: expected{
 				stack:      []*uint256.Int{},
@@ -44,7 +44,7 @@ func TestRunSucess(t *testing.T) {
 			},
 		},
 		{
-			code:  hexutils.HexToBytes("600660070260005360016000f3"),
+			code:  HexToBytes("600660070260005360016000f3"),
 			steps: 3, // should go out of gas
 			expected: expected{
 				stack:      []*uint256.Int{uint256.NewInt(42), uint256.NewInt(0)},
@@ -59,7 +59,7 @@ func TestRunSucess(t *testing.T) {
 			// 5b
 			// 60 00
 			// 56
-			code:  hexutils.HexToBytes("5b600056"),
+			code:  HexToBytes("5b600056"),
 			steps: 3, // should go out of gas
 			expected: expected{
 				stack:      []*uint256.Int{},
@@ -93,7 +93,7 @@ func TestRunSucess(t *testing.T) {
 			// 90
 			// 60 05
 			// 56
-			code:  hexutils.HexToBytes("60048060005b8160125760005360016000f35b8201906001900390600556"),
+			code:  HexToBytes("60048060005b8160125760005360016000f35b8201906001900390600556"),
 			steps: 68, // should go out of gas
 			expected: expected{
 				stack:      []*uint256.Int{uint256.NewInt(4), uint256.NewInt(0)},
@@ -105,7 +105,7 @@ func TestRunSucess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testname := hexutils.BytesToHex(tt.code)
+		testname := fmt.Sprintf("%X", tt.code)
 		t.Run(testname, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			ectx := NewExecutionCtx(
