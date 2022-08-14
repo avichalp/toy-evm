@@ -15,10 +15,10 @@ type Instruction struct {
 	executeFn ExecuteFn
 }
 
-var InstructionByOpcode map[byte]Instruction
+var InstructionSet map[byte]Instruction
 
 func Init() {
-	InstructionByOpcode = map[byte]Instruction{
+	InstructionSet = map[byte]Instruction{
 		0x0:  {0x0, "STOP", opStop},
 		0x01: {0x01, "ADD", opAdd},
 		0x02: {0x02, "MUL", opMul},

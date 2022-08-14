@@ -2,38 +2,52 @@ package evm
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
-	"regexp"
 )
 
-// HexToBytes convert a hex string to a byte sequence.
-// The hex string can have spaces between bytes.
-func HexToBytes(s string) []byte {
-	s = regexp.MustCompile(" ").ReplaceAllString(s, "")
-	b := make([]byte, hex.DecodedLen(len(s)))
-	_, err := hex.Decode(b, []byte(s))
-	if err != nil {
-		panic(err)
-	}
-
-	return b[:]
+type ExecutionCtx struct {
+	code       []byte
+	pc         uint64
+	stack      *Stack
+	memory     *Memory
+	calldata   Calldata
+	returndata []byte
+	jumpdests  map[uint64]uint64
+	steps      int
+	context    context.Context
+	cancel     context.CancelFunc
 }
 
+func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []byte, stack *Stack, memory *Memory, steps int) *ExecutionCtx {
+	return &ExecutionCtx{
+		context:    context,
+		cancel:     cancel,
+		code:       code,
+		pc:         0,
+		stack:      stack,
+		memory:     memory,
+		returndata: make([]byte, 0),
+		jumpdests:  make(map[uint64]uint64),
+		steps:      steps,
+	}
+}
+
+// decodeOpcode decodes the bytecode @ PC using
+// the InstructionSet
 func decodeOpcode(ctx *ExecutionCtx) Instruction {
 	fmt.Println("decoding opcode")
 	// Yellow paper section 9.4.1 (Machine State)
 	if ctx.pc >= uint64(len(ctx.code)) {
-		inst, ok := InstructionByOpcode[0]
+		inst, ok := InstructionSet[0]
 		if !ok {
-			panic("Cannot find STOP OPCODE in Instruction Registry")
+			panic("Cannot find STOP OPCODE in Instruction Set")
 		}
 		return inst
 	}
 
 	opcode := ctx.ReadCode(1)
 	fmt.Println("finding instruction for opcode", opcode)
-	inst, ok := InstructionByOpcode[opcode]
+	inst, ok := InstructionSet[opcode]
 	if !ok {
 		panic(fmt.Errorf("inst not found for opcode %d", opcode))
 
@@ -41,6 +55,7 @@ func decodeOpcode(ctx *ExecutionCtx) Instruction {
 	return inst
 }
 
+// Run starts the execution of the bytecode in the VM
 func Run(ectx *ExecutionCtx) {
 
 	ectx.ValidJumpDestination()
@@ -74,37 +89,24 @@ func Run(ectx *ExecutionCtx) {
 	}
 }
 
-type ExecutionCtx struct {
-	code       []byte
-	pc         uint64
-	stack      *Stack
-	memory     *Memory
-	calldata   Calldata
-	returndata []byte
-	jumpdests  map[uint64]uint64
-	steps      int
-	context    context.Context
-	cancel     context.CancelFunc
-}
-
-func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []byte, stack *Stack, memory *Memory, steps int) *ExecutionCtx {
-	return &ExecutionCtx{
-		context:    context,
-		cancel:     cancel,
-		code:       code,
-		pc:         0,
-		stack:      stack,
-		memory:     memory,
-		returndata: make([]byte, 0),
-		jumpdests:  make(map[uint64]uint64),
-		steps:      steps,
-	}
-}
-
+// Stop stops the execution of the bytecode in the VM
 func (ctx *ExecutionCtx) Stop() {
 	ctx.cancel()
 }
 
+// ValidJumpDestination iterates over the bytecode.
+// If it finds a valid destination, that is when the
+// current byte == 0x5B, it remembers this index in a
+// set (implemented as a hashmap).
+//
+// If the byte represents PUSH1-PUSH32, the index
+// must increment by the number of bytes PUSH-N
+// instruction will read from the code buffer plus one.
+//
+// For PUSH1 we only need to increment the index by 2.
+// One time for the PUSH1 instruction and second time for
+// the following 1 Byte. Similarly for PUSH2, index will
+// increment by: 1 + (0x61-0x60 + 1)
 func (ctx *ExecutionCtx) ValidJumpDestination() {
 	i := 0
 	for i < len(ctx.code) {
@@ -124,19 +126,20 @@ func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {
 	codeSegment := ctx.code[ctx.pc : ctx.pc+numBytes]
 	codeHex := fmt.Sprintf("0x%x", ctx.code)
 	fmt.Printf("reading code: %s, bytes: %d, segment: %s\n", codeHex, numBytes, codeSegment)
-
-	// increment the program counter
 	ctx.pc += numBytes
-
 	return codeSegment[0]
 
 }
 
+// SetReturnData sets the return data into the memory region
+// according to the given by offset and lenght of the data
+// to be returned
 func (ctx *ExecutionCtx) SetReturnData(offset, length uint64) {
 	ctx.returndata = ctx.memory.LoadRange(offset, length)
 	ctx.cancel()
 }
 
+// SetProgramCounter sets the PC in the execution context
 func (ctx *ExecutionCtx) SetProgramCounter(pc uint64) {
 	ctx.pc = pc
 }
