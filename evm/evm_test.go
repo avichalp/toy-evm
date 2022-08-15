@@ -13,6 +13,7 @@ type expected struct {
 	stack      []*uint256.Int
 	memory     []byte
 	returndata []byte
+	storage    map[uint256.Int]*uint256.Int
 	gasLeft    uint64
 }
 
@@ -51,6 +52,24 @@ func TestRunSucess(t *testing.T) {
 				memory:     []byte{},
 				returndata: []byte{},
 				gasLeft:    0,
+			},
+		},
+		{
+			// SSTORE and SLOAD
+			//
+			// 60 01
+			// 60 00
+			// 55
+			// 60 00
+			// 54
+			code: HexToBytes("6001600055600054"),
+			gas:  60, // should go out of gas
+			expected: expected{
+				stack:      []*uint256.Int{uint256.NewInt(1)},
+				memory:     []byte{},
+				returndata: []byte{},
+				storage:    map[uint256.Int]*uint256.Int{*uint256.NewInt(0): uint256.NewInt(1)},
+				gasLeft:    1,
 			},
 		},
 		{
@@ -114,6 +133,7 @@ func TestRunSucess(t *testing.T) {
 				tt.code,
 				NewStack(),
 				NewMemory(),
+				NewStorage(),
 				tt.gas,
 			)
 			Run(ectx)

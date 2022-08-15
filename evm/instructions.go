@@ -42,6 +42,8 @@ func Init() {
 		0x51: {0x51, "MLOAD", opMload, GasFastestStep},
 		0x52: {0x52, "MSTORE", opMstore, GasFastestStep},
 		0x53: {0x53, "MSTORE8", opMstore8, GasFastestStep},
+		0x54: {0x54, "SLOAD", opSload, 50},
+		0x55: {0x55, "SSTORE", opSstore, 0},
 		0x58: {0x58, "PC", opProgramCounter, GasQuickStep},
 		0x59: {0x59, "MSIZE", opMsize, GasQuickStep},
 		0x5B: {0x5B, "JUMPDEST", opJumpdest, 1},
@@ -126,6 +128,17 @@ func opMstore8(ctx *ExecutionCtx) {
 func opMstore(ctx *ExecutionCtx) {
 	offset, value := ctx.stack.Pop(), ctx.stack.Pop()
 	ctx.memory.StoreWord(offset.Uint64(), *value)
+}
+
+func opSload(ctx *ExecutionCtx) {
+	slot := ctx.stack.Pop()
+	value := ctx.storage.get(*slot)
+	ctx.stack.Push(value)
+}
+
+func opSstore(ctx *ExecutionCtx) {
+	slot, value := ctx.stack.Pop(), ctx.stack.Pop()
+	ctx.storage.put(slot, value)
 }
 
 func opProgramCounter(ctx *ExecutionCtx) {

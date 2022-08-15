@@ -10,6 +10,7 @@ type ExecutionCtx struct {
 	pc         uint64
 	stack      *Stack
 	memory     *Memory
+	storage    *Storage
 	calldata   Calldata
 	returndata []byte
 	jumpdests  map[uint64]uint64
@@ -18,7 +19,13 @@ type ExecutionCtx struct {
 	cancel     context.CancelFunc
 }
 
-func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []byte, stack *Stack, memory *Memory, gas uint64) *ExecutionCtx {
+func NewExecutionCtx(context context.Context,
+	cancel context.CancelFunc,
+	code []byte,
+	stack *Stack,
+	memory *Memory,
+	storage *Storage,
+	gas uint64) *ExecutionCtx {
 	return &ExecutionCtx{
 		context:    context,
 		cancel:     cancel,
@@ -26,6 +33,7 @@ func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []
 		pc:         0,
 		stack:      stack,
 		memory:     memory,
+		storage:    storage,
 		returndata: make([]byte, 0),
 		jumpdests:  make(map[uint64]uint64),
 		gas:        gas,
@@ -95,6 +103,11 @@ func Run(ectx *ExecutionCtx) {
 			fmt.Printf("memory: %v\n", ectx.memory.memory)
 			fmt.Printf("returndata: %v\n", ectx.returndata)
 			fmt.Printf("gas left: %v\n", ectx.gas)
+			fmt.Println("storage:")
+			for k, v := range ectx.storage.data {
+				fmt.Printf("%d: %d\n", k, v)
+			}
+
 			fmt.Printf("\n")
 		}
 	}

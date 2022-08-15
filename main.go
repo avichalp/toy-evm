@@ -30,6 +30,7 @@ func main() {
 		evm.HexToBytes(code),
 		evm.NewStack(),
 		evm.NewMemory(),
+		evm.NewStorage(),
 		gas,
 	)
 	evm.Run(ectx)
