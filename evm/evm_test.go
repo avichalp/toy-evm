@@ -13,14 +13,14 @@ type expected struct {
 	stack      []*uint256.Int
 	memory     []byte
 	returndata []byte
-	steps      int
+	gasLeft    uint64
 }
 
 func TestRunSucess(t *testing.T) {
 	Init()
 	var tests = []struct {
-		code  []byte
-		steps int
+		code []byte
+		gas  uint64
 		expected
 	}{
 		{
@@ -34,23 +34,23 @@ func TestRunSucess(t *testing.T) {
 			// 60 01
 			// 60 00
 			// f3
-			code:  HexToBytes("600660070260005360016000f3"),
-			steps: 8,
+			code: HexToBytes("600660070260005360016000f3"),
+			gas:  24,
 			expected: expected{
 				stack:      []*uint256.Int{},
 				memory:     []byte{42},
 				returndata: []byte{42},
-				steps:      0,
+				gasLeft:    1,
 			},
 		},
 		{
-			code:  HexToBytes("600660070260005360016000f3"),
-			steps: 3, // should go out of gas
+			code: HexToBytes("600660070260005360016000f3"),
+			gas:  13,
 			expected: expected{
 				stack:      []*uint256.Int{uint256.NewInt(42), uint256.NewInt(0)},
 				memory:     []byte{},
 				returndata: []byte{},
-				steps:      -1,
+				gasLeft:    0,
 			},
 		},
 		{
@@ -59,13 +59,13 @@ func TestRunSucess(t *testing.T) {
 			// 5b
 			// 60 00
 			// 56
-			code:  HexToBytes("5b600056"),
-			steps: 3, // should go out of gas
+			code: HexToBytes("5b600056"),
+			gas:  5, // should go out of gas
 			expected: expected{
 				stack:      []*uint256.Int{},
 				memory:     []byte{},
 				returndata: []byte{},
-				steps:      -1,
+				gasLeft:    0,
 			},
 		},
 		{
@@ -93,13 +93,13 @@ func TestRunSucess(t *testing.T) {
 			// 90
 			// 60 05
 			// 56
-			code:  HexToBytes("60048060005b8160125760005360016000f35b8201906001900390600556"),
-			steps: 68, // should go out of gas
+			code: HexToBytes("60048060005b8160125760005360016000f35b8201906001900390600556"),
+			gas:  250, // should go out of gas
 			expected: expected{
 				stack:      []*uint256.Int{uint256.NewInt(4), uint256.NewInt(0)},
 				memory:     []byte{16},
 				returndata: []byte{16},
-				steps:      0,
+				gasLeft:    12,
 			},
 		},
 	}
@@ -114,10 +114,10 @@ func TestRunSucess(t *testing.T) {
 				tt.code,
 				NewStack(),
 				NewMemory(),
-				tt.steps,
+				tt.gas,
 			)
 			Run(ectx)
-			assert.Equal(t, tt.expected.steps, ectx.steps)
+			assert.Equal(t, tt.expected.gasLeft, ectx.gas)
 			assert.Equal(t, tt.expected.stack, ectx.stack.stack)
 			assert.Equal(t, tt.expected.memory, ectx.memory.memory)
 			assert.Equal(t, tt.expected.returndata, ectx.returndata)

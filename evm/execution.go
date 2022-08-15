@@ -13,12 +13,12 @@ type ExecutionCtx struct {
 	calldata   Calldata
 	returndata []byte
 	jumpdests  map[uint64]uint64
-	steps      int
+	gas        uint64
 	context    context.Context
 	cancel     context.CancelFunc
 }
 
-func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []byte, stack *Stack, memory *Memory, steps int) *ExecutionCtx {
+func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []byte, stack *Stack, memory *Memory, gas uint64) *ExecutionCtx {
 	return &ExecutionCtx{
 		context:    context,
 		cancel:     cancel,
@@ -28,7 +28,7 @@ func NewExecutionCtx(context context.Context, cancel context.CancelFunc, code []
 		memory:     memory,
 		returndata: make([]byte, 0),
 		jumpdests:  make(map[uint64]uint64),
-		steps:      steps,
+		gas:        gas,
 	}
 }
 
@@ -55,6 +55,15 @@ func decodeOpcode(ctx *ExecutionCtx) Instruction {
 	return inst
 }
 
+func (ectx *ExecutionCtx) useGas(gas uint64) {
+	// make sure that uint64 doesn't overflow
+	if gas > ectx.gas {
+		ectx.gas = 0
+	} else {
+		ectx.gas -= gas
+	}
+}
+
 // Run starts the execution of the bytecode in the VM
 func Run(ectx *ExecutionCtx) {
 
@@ -64,26 +73,28 @@ func Run(ectx *ExecutionCtx) {
 	for {
 		select {
 		case <-ectx.context.Done():
-			fmt.Println("execution complete", ectx.steps)
+			fmt.Println("execution complete", ectx.gas)
 			ectx.cancel()
 			return
 		default:
 			// no. of execution check
-			if ectx.steps < 0 {
-				fmt.Println("out of gas", ectx.steps)
+			if ectx.gas <= 0 {
+				fmt.Println("out of gas", ectx.gas)
 				ectx.cancel()
 				return
 			}
 
 			pcBefore := ectx.pc
 			inst := decodeOpcode(ectx)
-
+			// deduct gas from the budget before executing
+			ectx.useGas(inst.constantGas)
 			inst.executeFn(ectx)
-			ectx.steps--
+
 			fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)
 			fmt.Printf("stack: %v\n", ectx.stack.stack)
 			fmt.Printf("memory: %v\n", ectx.memory.memory)
 			fmt.Printf("returndata: %v\n", ectx.returndata)
+			fmt.Printf("gas left: %v\n", ectx.gas)
 			fmt.Printf("\n")
 		}
 	}

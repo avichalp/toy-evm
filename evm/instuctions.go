@@ -10,34 +10,46 @@ import (
 type ExecuteFn func(*ExecutionCtx)
 
 type Instruction struct {
-	opcode    byte
-	name      string
-	executeFn ExecuteFn
+	opcode      byte
+	name        string
+	executeFn   ExecuteFn
+	constantGas uint64
 }
 
 var InstructionSet map[byte]Instruction
 
+// see geth: core/vm/gas.go
+// Gas costs
+const (
+	GasQuickStep   uint64 = 2
+	GasFastestStep uint64 = 3
+	GasFastStep    uint64 = 5
+	GasMidStep     uint64 = 8
+	GasSlowStep    uint64 = 10
+	GasExtStep     uint64 = 20
+)
+
 func Init() {
 	InstructionSet = map[byte]Instruction{
-		0x0:  {0x0, "STOP", opStop},
-		0x01: {0x01, "ADD", opAdd},
-		0x02: {0x02, "MUL", opMul},
-		0x03: {0x03, "SUB", opSub},
-		0x60: {0x60, "PUSH1", opPush1},
-		0xF3: {0xF3, "RETURN", opReturn},
-		0x56: {0x56, "JUMP", opJump},
-		0x57: {0x57, "JUMPI", opJumpi},
-		0x51: {0x51, "MLOAD", opMload},
-		0x52: {0x52, "MSTORE", opMstore},
-		0x53: {0x53, "MSTORE8", opMstore8},
-		0x58: {0x58, "PC", opProgramCounter},
-		0x59: {0x59, "MSIZE", opMsize},
-		0x5B: {0x5B, "JUMPDEST", opJumpdest},
-		0x80: {0x80, "DUP1", opDup1},
-		0x81: {0x81, "DUP2", opDup2},
-		0x82: {0x82, "DUP3", opDup3},
-		0x90: {0x90, "SWAP1", OpSwap1},
-		0x35: {0x35, "CALLDATALOAD", opCallDataLoad},
+		0x0:  {0x0, "STOP", opStop, 0},
+		0x01: {0x01, "ADD", opAdd, GasFastestStep},
+		0x02: {0x02, "MUL", opMul, GasFastStep},
+		0x03: {0x03, "SUB", opSub, GasFastestStep},
+		0x60: {0x60, "PUSH1", opPush1, GasFastestStep},
+		0xF3: {0xF3, "RETURN", opReturn, 0},
+		0x56: {0x56, "JUMP", opJump, GasMidStep},
+		0x57: {0x57, "JUMPI", opJumpi, GasSlowStep},
+		0x51: {0x51, "MLOAD", opMload, GasFastestStep},
+		0x52: {0x52, "MSTORE", opMstore, GasFastestStep},
+		0x53: {0x53, "MSTORE8", opMstore8, GasFastestStep},
+		0x58: {0x58, "PC", opProgramCounter, GasQuickStep},
+		0x59: {0x59, "MSIZE", opMsize, GasQuickStep},
+		0x5B: {0x5B, "JUMPDEST", opJumpdest, 1},
+		0x80: {0x80, "DUP1", opDup1, GasFastestStep},
+		0x81: {0x81, "DUP2", opDup2, GasFastestStep},
+		0x82: {0x82, "DUP3", opDup3, GasFastestStep},
+		0x90: {0x90, "SWAP1", OpSwap1, GasFastestStep},
+		0x35: {0x35, "CALLDATALOAD", opCallDataLoad, GasFastestStep},
 	}
 
 }

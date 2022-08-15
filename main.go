@@ -12,13 +12,13 @@ func main() {
 	var (
 		code     string
 		calldata string
-		steps    int
+		gas      uint64
 	)
 	flag.StringVar(&code, "code", "0x0", "hex data of the code to run")
 	flag.StringVar(&calldata, "calldata", "0x0", "hex data to use as input")
-	flag.IntVar(&steps, "steps", 5, "number of steps the VM will execute")
+	flag.Uint64Var(&gas, "gas", 5, "number of steps the VM will execute")
 	flag.Parse()
-	fmt.Printf("code: %s, calldata %s, gas %d\n", code, calldata, steps)
+	fmt.Printf("code: %s, calldata %s, gas %d\n", code, calldata, gas)
 
 	evm.Init()
 	fmt.Printf("\n")
@@ -30,7 +30,7 @@ func main() {
 		evm.HexToBytes(code),
 		evm.NewStack(),
 		evm.NewMemory(),
-		steps,
+		gas,
 	)
 	evm.Run(ectx)
 }
