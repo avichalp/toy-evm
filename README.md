@@ -23,3 +23,23 @@ With this project, I want to create a playground to tinker with EVM primitives. 
 - calldata and returndata
 - [Jump Destination validation](https://github.com/avichalp/toy-evm/blob/2ef15a71f8d773ca72f3f68c70ad07a6525117b8/evm/execution.go#L113-L137) restricts invalid code jumps.
 - Static gas account: Constant gas cost for opcodes. Gas accounting for memory growth, self destruct,  etc. is not yet implemented.
+
+
+#### Requirements
+
+- [Go](https://go.dev/doc/install)
+
+#### Run tests
+```sh
+go test ./...
+```
+
+#### Examples
+```sh
+go run ./... -code 6001600055 -gas 50 
+```
+
+```sh
+go run ./... -code 60048060005b8160125760005360016000f35b8201906001900390600556 -gas 1550
+```
+
