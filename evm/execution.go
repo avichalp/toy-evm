@@ -85,17 +85,18 @@ func Run(ectx *ExecutionCtx) {
 			ectx.cancel()
 			return
 		default:
-			// no. of execution check
+			pcBefore := ectx.pc
+			inst := decodeOpcode(ectx)
+			// deduct gas from the budget before executing
+			ectx.useGas(inst.constantGas)
+
+			// without gas we can't proceed
 			if ectx.gas <= 0 {
 				fmt.Println("out of gas", ectx.gas)
 				ectx.cancel()
 				return
 			}
 
-			pcBefore := ectx.pc
-			inst := decodeOpcode(ectx)
-			// deduct gas from the budget before executing
-			ectx.useGas(inst.constantGas)
 			inst.executeFn(ectx)
 
 			fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)

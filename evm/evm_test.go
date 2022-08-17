@@ -48,7 +48,8 @@ func TestRunSucess(t *testing.T) {
 			code: HexToBytes("600660070260005360016000f3"),
 			gas:  13,
 			expected: expected{
-				stack:      []*uint256.Int{uint256.NewInt(42), uint256.NewInt(0)},
+				// todo: ideally, in case of OutOfGas stack, memory, storage should all revert
+				stack:      []*uint256.Int{uint256.NewInt(42)},
 				memory:     []byte{},
 				returndata: []byte{},
 				gasLeft:    0,
@@ -79,7 +80,7 @@ func TestRunSucess(t *testing.T) {
 			// 60 00
 			// 56
 			code: HexToBytes("5b600056"),
-			gas:  5, // should go out of gas
+			gas:  13, // should go out of gas
 			expected: expected{
 				stack:      []*uint256.Int{},
 				memory:     []byte{},
