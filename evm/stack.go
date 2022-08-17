@@ -9,14 +9,14 @@ import (
 )
 
 type Stack struct {
-	stack    []*uint256.Int
+	data     []*uint256.Int
 	maxDepth int
 }
 
 func NewStack() *Stack {
 	s := make([]*uint256.Int, 0)
 	return &Stack{
-		stack:    s,
+		data:     s,
 		maxDepth: 1024,
 	}
 }
@@ -31,18 +31,18 @@ func (s *Stack) Push(item *uint256.Int) {
 	if invalidWord(item) {
 		panic("Stack item too big")
 	}
-	if len(s.stack)+1 > s.maxDepth {
+	if len(s.data)+1 > s.maxDepth {
 		panic("Stack Overflow")
 	}
-	s.stack = append(s.stack, item)
+	s.data = append(s.data, item)
 }
 
 func (s *Stack) Pop() (item *uint256.Int) {
-	if len(s.stack) == 0 {
+	if len(s.data) == 0 {
 		panic("Stack underflow")
 	}
-	item = s.stack[len(s.stack)-1]
-	s.stack = slices.Delete(s.stack, len(s.stack)-1, len(s.stack))
+	item = s.data[len(s.data)-1]
+	s.data = slices.Delete(s.data, len(s.data)-1, len(s.data))
 	return
 }
 
@@ -50,12 +50,12 @@ func (s *Stack) Pop() (item *uint256.Int) {
 // eg: Peek(0) will return the top of the stack
 func (s *Stack) Peek(i uint16) (item *uint256.Int) {
 	// there can only be 1024 stack frames
-	length := uint16(len(s.stack))
+	length := uint16(len(s.data))
 	if length < i {
 		panic(fmt.Errorf("stack underflow %d", i))
 	}
 
-	return s.stack[length-1-i]
+	return s.data[length-1-i]
 }
 
 // Swap the top of the stack with the i+1th element
@@ -63,11 +63,15 @@ func (s *Stack) Swap(i uint16) {
 	if i == 0 {
 		return
 	}
-	length := uint16(len(s.stack))
+	length := uint16(len(s.data))
 
 	if length < i {
 		panic(fmt.Errorf("stack underflow %d", i))
 	}
 
-	s.stack[length-1], s.stack[length-1-i] = s.stack[length-1-i], s.stack[length-1]
+	s.data[length-1], s.data[length-1-i] = s.data[length-1-i], s.data[length-1]
+}
+
+func (s *Stack) String() string {
+	return fmt.Sprintf("stack: %s", s.data)
 }

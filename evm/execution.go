@@ -2,19 +2,20 @@ package evm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
 type ExecutionCtx struct {
 	code       []byte
 	pc         uint64
-	stack      *Stack
-	memory     *Memory
-	storage    *Storage
-	calldata   Calldata
-	returndata []byte
-	jumpdests  map[uint64]uint64
-	gas        uint64
+	Stack      *Stack
+	Memory     *Memory
+	Storage    *Storage
+	Calldata   Calldata
+	Returndata []byte
+	Jumpdests  map[uint64]uint64
+	Gas        uint64
 	context    context.Context
 	cancel     context.CancelFunc
 }
@@ -31,12 +32,12 @@ func NewExecutionCtx(context context.Context,
 		cancel:     cancel,
 		code:       code,
 		pc:         0,
-		stack:      stack,
-		memory:     memory,
-		storage:    storage,
-		returndata: make([]byte, 0),
-		jumpdests:  make(map[uint64]uint64),
-		gas:        gas,
+		Stack:      stack,
+		Memory:     memory,
+		Storage:    storage,
+		Returndata: make([]byte, 0),
+		Jumpdests:  make(map[uint64]uint64),
+		Gas:        gas,
 	}
 }
 
@@ -63,53 +64,43 @@ func decodeOpcode(ctx *ExecutionCtx) Instruction {
 	return inst
 }
 
-func (ectx *ExecutionCtx) useGas(gas uint64) {
+// UseGas deducts the avialble gas. If the available gas is
+// fully exhausted then it returns false
+func (ectx *ExecutionCtx) UseGas(gas uint64) bool {
 	// make sure that uint64 doesn't overflow
-	if gas > ectx.gas {
-		ectx.gas = 0
-	} else {
-		ectx.gas -= gas
+	if gas > ectx.Gas {
+		ectx.Gas = 0
+		return false
 	}
+
+	ectx.Gas -= gas
+	return true
 }
 
 // Run starts the execution of the bytecode in the VM
-func Run(ectx *ExecutionCtx) {
+func Run(ectx *ExecutionCtx) ([]byte, error) {
 
 	ectx.ValidJumpDestination()
-	fmt.Printf("set valid jump destination %v \n", ectx.jumpdests)
+	fmt.Printf("set valid jump destination %v \n", ectx.Jumpdests)
 
 	for {
 		select {
 		case <-ectx.context.Done():
-			fmt.Println("execution complete", ectx.gas)
+			fmt.Println("execution complete", ectx.Gas)
 			ectx.cancel()
-			return
+			return ectx.Returndata, nil
 		default:
 			pcBefore := ectx.pc
 			inst := decodeOpcode(ectx)
 			// deduct gas from the budget before executing
-			ectx.useGas(inst.constantGas)
-
-			// without gas we can't proceed
-			if ectx.gas <= 0 {
-				fmt.Println("out of gas", ectx.gas)
+			if ok := ectx.UseGas(inst.constantGas); !ok {
+				// without gas we can't proceed
 				ectx.cancel()
-				return
+				return nil, errors.New("out of gas")
 			}
 
 			inst.executeFn(ectx)
-
 			fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)
-			fmt.Printf("stack: %v\n", ectx.stack.stack)
-			fmt.Printf("memory: %v\n", ectx.memory.memory)
-			fmt.Printf("returndata: %v\n", ectx.returndata)
-			fmt.Printf("gas left: %v\n", ectx.gas)
-			fmt.Println("storage:")
-			for k, v := range ectx.storage.data {
-				fmt.Printf("%d: %d\n", k, v)
-			}
-
-			fmt.Printf("\n")
 		}
 	}
 }
@@ -137,7 +128,7 @@ func (ctx *ExecutionCtx) ValidJumpDestination() {
 	for i < len(ctx.code) {
 		currentOP := ctx.code[i]
 		if currentOP == 0x5B { // OPCODE of JUMPDEST
-			ctx.jumpdests[uint64(i)] = uint64(i)
+			ctx.Jumpdests[uint64(i)] = uint64(i)
 		} else if currentOP >= 0x60 && currentOP <= 0x7F {
 			i += int(currentOP) - 0x60 + 1
 		}
@@ -157,10 +148,10 @@ func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {
 }
 
 // SetReturnData sets the return data into the memory region
-// according to the given by offset and lenght of the data
-// to be returned
+// according to the given by offset and length of the data
+// to be returned by the evm
 func (ctx *ExecutionCtx) SetReturnData(offset, length uint64) {
-	ctx.returndata = ctx.memory.LoadRange(offset, length)
+	ctx.Returndata = ctx.Memory.LoadRange(offset, length)
 	ctx.cancel()
 }
 

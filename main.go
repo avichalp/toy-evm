@@ -34,4 +34,9 @@ func main() {
 		gas,
 	)
 	evm.Run(ectx)
+
+	fmt.Printf("\n%s                      %s\n\n", ectx.Stack, ectx.Memory)
+	fmt.Printf("%s\n\n", ectx.Storage)
+	fmt.Printf("Gas left: %d\n\n", ectx.Gas)
+
 }

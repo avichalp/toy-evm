@@ -138,10 +138,10 @@ func TestRunSucess(t *testing.T) {
 				tt.gas,
 			)
 			Run(ectx)
-			assert.Equal(t, tt.expected.gasLeft, ectx.gas)
-			assert.Equal(t, tt.expected.stack, ectx.stack.stack)
-			assert.Equal(t, tt.expected.memory, ectx.memory.memory)
-			assert.Equal(t, tt.expected.returndata, ectx.returndata)
+			assert.Equal(t, tt.expected.gasLeft, ectx.Gas)
+			assert.Equal(t, tt.expected.stack, ectx.Stack.data)
+			assert.Equal(t, tt.expected.memory, ectx.Memory.data)
+			assert.Equal(t, tt.expected.returndata, ectx.Returndata)
 		})
 	}
 }
