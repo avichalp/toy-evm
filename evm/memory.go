@@ -59,8 +59,6 @@ func (m *Memory) StoreByte(offset uint64, value uint8) {
 
 func (m *Memory) StoreWord(offset uint64, value uint256.Int) {
 	m.expandIfNeeded(offset + 31)
-	copy(m.data[offset:offset+32], zeroWord)
-	// see: https://github.com/ethereum/go-ethereum/blob/a69d4b273d1164637e0edb2cbad2e51325b7e897/core/vm/memory.go#L52-L62
 	value.WriteToSlice(m.data[offset : offset+32])
 }
 
