@@ -38,7 +38,7 @@ func TestRunSucess(t *testing.T) {
 			gas:  24,
 			expected: expected{
 				stack:      []*uint256.Int{},
-				memory:     []byte{42},
+				memory:     append([]byte{42}, zeroWord...)[:32],
 				returndata: []byte{42},
 				gasLeft:    1,
 			},
@@ -116,7 +116,7 @@ func TestRunSucess(t *testing.T) {
 			gas:  250, // should go out of gas
 			expected: expected{
 				stack:      []*uint256.Int{uint256.NewInt(4), uint256.NewInt(0)},
-				memory:     []byte{16},
+				memory:     append([]byte{16}, zeroWord...)[0:32],
 				returndata: []byte{16},
 				gasLeft:    12,
 			},

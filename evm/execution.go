@@ -77,6 +77,7 @@ func Run(ectx *ExecutionCtx) ([]byte, error) {
 	for !ectx.Stopped {		
 		pcBefore := ectx.pc
 		inst := decodeOpcode(ectx)
+		
 		// deduct gas from the budget before executing
 		if ok := ectx.UseGas(inst.constantGas); !ok {
 			// without gas we can't proceed				

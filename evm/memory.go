@@ -2,9 +2,17 @@ package evm
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/holiman/uint256"
 )
+
+var zeroWord = []byte{
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+}
 
 type Memory struct {
 	data []uint8
@@ -15,11 +23,32 @@ func NewMemory() *Memory {
 	return &Memory{data: m}
 }
 
+// expandIfNeeded will expand the memory byte slice when
+// the vm encounters either an MLOAD or MSTORE/MSTORE8
+// instructions
+//
+// According to the Yellow Paper, the number of active words
+// is expanded when we are reading or writing a previously
+// untouched memory location
+//
+// In case of MLOAD:
+//
+//	μ′i ≡ max(μi,⌈(μs[0]+32)÷32⌉)
+//
+// In case of MSTORE:
+//
+//	μ′i ≡ max(μi, ⌈(μs[0]+1)÷32⌉)
+//
+// μi: highest memory location
+// μs: stack (μs[0] is the top of the stack)
 func (m *Memory) expandIfNeeded(offset uint64) {
-	if offset >= uint64(len(m.data)) {
-		for i := 0; i < int(offset-uint64(len(m.data))+1); i++ {
-			m.data = append(m.data, 0)
-		}
+	if offset < uint64(len(m.data)) {
+		return // No need to grow memory
+	}
+	activeWordsBefore := m.ActiveWords()
+	activeWordsAfter := uint64(math.Max(float64(activeWordsBefore), math.Ceil(float64(offset+1)/float64(32))))
+	for i := 0; i < int(activeWordsAfter-activeWordsBefore); i++ {
+		m.data = append(m.data, zeroWord...)
 	}
 }
 
@@ -30,34 +59,14 @@ func (m *Memory) StoreByte(offset uint64, value uint8) {
 
 func (m *Memory) StoreWord(offset uint64, value uint256.Int) {
 	m.expandIfNeeded(offset + 31)
-	zero := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	copy(m.data[offset:offset+32], zero)
+	copy(m.data[offset:offset+32], zeroWord)
+	// see: https://github.com/ethereum/go-ethereum/blob/a69d4b273d1164637e0edb2cbad2e51325b7e897/core/vm/memory.go#L52-L62
 	value.WriteToSlice(m.data[offset : offset+32])
-	// similar function in geth
-	// https://github.com/ethereum/go-ethereum/blob/a69d4b273d1164637e0edb2cbad2e51325b7e897/core/vm/memory.go#L52-L62
-
-}
-
-func (m *Memory) Store(offset uint64, size uint64, value uint256.Int) {
-	// words to write: size / 32 if size is a multiple of 32 -> Store Word
-	// store remaining bytes using StoreByte remainder of size/32 times
-	value.Bytes()
-}
-
-func (m *Memory) LoadByte(offset uint64) uint8 {
-	if offset >= uint64(len(m.data)) {
-		return 0
-	}
-	return m.data[offset]
 }
 
 func (m *Memory) LoadRange(offset uint64, length uint64) []byte {
-	loaded := make([]byte, 0)
-	for o := offset; o < offset+length; o++ {
-		loaded = append(loaded, m.LoadByte(o))
-	}
-	return loaded
+	m.expandIfNeeded(offset + length - 1)
+	return m.data[offset : offset+length]
 }
 
 func (m *Memory) LoadWord(offset uint64) *uint256.Int {
