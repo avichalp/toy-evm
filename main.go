@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 
@@ -23,20 +22,22 @@ func main() {
 	evm.Init()
 	fmt.Printf("\n")
 
-	ctx, cancel := context.WithCancel(context.Background())
 	ectx := evm.NewExecutionCtx(
-		ctx,
-		cancel,
 		evm.HexToBytes(code),
 		evm.NewStack(),
 		evm.NewMemory(),
 		evm.NewStorage(),
 		gas,
 	)
-	evm.Run(ectx)
+	returnData, err := evm.Run(ectx)
+	if err != nil {
+		panic(err)
+	}
 
 	fmt.Printf("\n%s                      %s\n\n", ectx.Stack, ectx.Memory)
 	fmt.Printf("%s\n\n", ectx.Storage)
 	fmt.Printf("Gas left: %d\n\n", ectx.Gas)
+
+	fmt.Println("return data", returnData)
 
 }

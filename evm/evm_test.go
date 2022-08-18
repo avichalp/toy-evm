@@ -1,7 +1,6 @@
 package evm
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -127,10 +126,7 @@ func TestRunSucess(t *testing.T) {
 	for _, tt := range tests {
 		testname := fmt.Sprintf("%X", tt.code)
 		t.Run(testname, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
 			ectx := NewExecutionCtx(
-				ctx,
-				cancel,
 				tt.code,
 				NewStack(),
 				NewMemory(),

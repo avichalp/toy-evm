@@ -1,7 +1,6 @@
 package evm
 
 import (
-	"context"
 	"errors"
 	"fmt"
 )
@@ -16,20 +15,11 @@ type ExecutionCtx struct {
 	Returndata []byte
 	Jumpdests  map[uint64]uint64
 	Gas        uint64
-	context    context.Context
-	cancel     context.CancelFunc
+	Stopped    bool		
 }
 
-func NewExecutionCtx(context context.Context,
-	cancel context.CancelFunc,
-	code []byte,
-	stack *Stack,
-	memory *Memory,
-	storage *Storage,
-	gas uint64) *ExecutionCtx {
+func NewExecutionCtx(code []byte, stack *Stack, memory *Memory, storage *Storage, gas uint64) *ExecutionCtx {
 	return &ExecutionCtx{
-		context:    context,
-		cancel:     cancel,
 		code:       code,
 		pc:         0,
 		Stack:      stack,
@@ -38,6 +28,7 @@ func NewExecutionCtx(context context.Context,
 		Returndata: make([]byte, 0),
 		Jumpdests:  make(map[uint64]uint64),
 		Gas:        gas,
+		Stopped:    false,
 	}
 }
 
@@ -83,31 +74,26 @@ func Run(ectx *ExecutionCtx) ([]byte, error) {
 	ectx.ValidJumpDestination()
 	fmt.Printf("set valid jump destination %v \n", ectx.Jumpdests)
 
-	for {
-		select {
-		case <-ectx.context.Done():
-			fmt.Println("execution complete", ectx.Gas)
-			ectx.cancel()
-			return ectx.Returndata, nil
-		default:
-			pcBefore := ectx.pc
-			inst := decodeOpcode(ectx)
-			// deduct gas from the budget before executing
-			if ok := ectx.UseGas(inst.constantGas); !ok {
-				// without gas we can't proceed
-				ectx.cancel()
-				return nil, errors.New("out of gas")
-			}
-
-			inst.executeFn(ectx)
-			fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)
+	for !ectx.Stopped {		
+		pcBefore := ectx.pc
+		inst := decodeOpcode(ectx)
+		// deduct gas from the budget before executing
+		if ok := ectx.UseGas(inst.constantGas); !ok {
+			// without gas we can't proceed				
+			ectx.Stopped = true
+			return nil, errors.New("out of gas")
 		}
+
+		inst.executeFn(ectx)
+		fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)		
 	}
+
+	return ectx.Returndata, nil
 }
 
 // Stop stops the execution of the bytecode in the VM
 func (ctx *ExecutionCtx) Stop() {
-	ctx.cancel()
+	ctx.Stopped = true	
 }
 
 // ValidJumpDestination iterates over the bytecode.
@@ -138,7 +124,7 @@ func (ctx *ExecutionCtx) ValidJumpDestination() {
 
 // ReadCode returns the next numBytes from the code
 // buffer as an integer and advances pc by numBytes
-func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {
+func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {	
 	codeSegment := ctx.code[ctx.pc : ctx.pc+numBytes]
 	codeHex := fmt.Sprintf("0x%x", ctx.code)
 	fmt.Printf("reading code: %s, bytes: %d, segment: %s\n", codeHex, numBytes, codeSegment)
@@ -152,7 +138,7 @@ func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {
 // to be returned by the evm
 func (ctx *ExecutionCtx) SetReturnData(offset, length uint64) {
 	ctx.Returndata = ctx.Memory.LoadRange(offset, length)
-	ctx.cancel()
+	ctx.Stopped = true	
 }
 
 // SetProgramCounter sets the PC in the execution context
