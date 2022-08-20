@@ -2,7 +2,6 @@ package evm
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/holiman/uint256"
 	"golang.org/x/exp/slices"
@@ -23,23 +22,28 @@ func NewStack() *Stack {
 
 func invalidWord(word *uint256.Int) bool {
 	min := uint256.NewInt(0)
-	max := uint256.NewInt(uint64(math.Pow(2, 256) - 1))
+	maxString := "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+	max, err := uint256.FromHex(maxString)
+	if err != nil {
+		return false
+	}
+
 	return word.Lt(min) || word.Gt(max)
 }
 
 func (s *Stack) Push(item *uint256.Int) {
 	if invalidWord(item) {
-		panic("Stack item too big")
+		panic(fmt.Errorf("Stack item out of range"))
 	}
 	if len(s.data)+1 > s.maxDepth {
-		panic("Stack Overflow")
+		panic(fmt.Errorf("stack overflow"))
 	}
 	s.data = append(s.data, item)
 }
 
 func (s *Stack) Pop() (item *uint256.Int) {
 	if len(s.data) == 0 {
-		panic("Stack underflow")
+		panic(fmt.Errorf("stack underflow"))
 	}
 	item = s.data[len(s.data)-1]
 	s.data = slices.Delete(s.data, len(s.data)-1, len(s.data))
@@ -49,10 +53,9 @@ func (s *Stack) Pop() (item *uint256.Int) {
 // Peek returns a stack element without popping it
 // eg: Peek(0) will return the top of the stack
 func (s *Stack) Peek(i uint16) (item *uint256.Int) {
-	// there can only be 1024 stack frames
 	length := uint16(len(s.data))
-	if length < i {
-		panic(fmt.Errorf("stack underflow %d", i))
+	if len(s.data) == 0 || i >= length {
+		panic(fmt.Errorf("invalid peek index %d", i))
 	}
 
 	return s.data[length-1-i]
@@ -65,7 +68,7 @@ func (s *Stack) Swap(i uint16) {
 	}
 	length := uint16(len(s.data))
 
-	if length < i {
+	if i >= length {
 		panic(fmt.Errorf("stack underflow %d", i))
 	}
 
