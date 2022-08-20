@@ -20,21 +20,7 @@ func NewStack() *Stack {
 	}
 }
 
-func invalidWord(word *uint256.Int) bool {
-	min := uint256.NewInt(0)
-	maxString := "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-	max, err := uint256.FromHex(maxString)
-	if err != nil {
-		return false
-	}
-
-	return word.Lt(min) || word.Gt(max)
-}
-
 func (s *Stack) Push(item *uint256.Int) {
-	if invalidWord(item) {
-		panic(fmt.Errorf("Stack item out of range"))
-	}
 	if len(s.data)+1 > s.maxDepth {
 		panic(fmt.Errorf("stack overflow"))
 	}
