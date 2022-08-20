@@ -20,7 +20,6 @@ func NewStorage() *Storage {
 func (s *Storage) Get(slot uint256.Int) *uint256.Int {
 	value, ok := s.data[slot]
 	if !ok {
-		fmt.Println("cannot find slot in storage", slot)
 		return uint256.NewInt(0)
 	}
 
