@@ -128,6 +128,7 @@ func TestRunSucess(t *testing.T) {
 		t.Run(testname, func(t *testing.T) {
 			ectx := NewExecutionCtx(
 				tt.code,
+				NewCalldata("abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"),
 				NewStack(),
 				NewMemory(),
 				NewStorage(),

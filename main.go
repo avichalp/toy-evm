@@ -24,6 +24,7 @@ func main() {
 
 	ectx := evm.NewExecutionCtx(
 		evm.HexToBytes(code),
+		evm.NewCalldata(calldata),
 		evm.NewStack(),
 		evm.NewMemory(),
 		evm.NewStorage(),

@@ -11,16 +11,17 @@ type ExecutionCtx struct {
 	Stack      *Stack
 	Memory     *Memory
 	Storage    *Storage
-	Calldata   Calldata
+	Calldata   *Calldata
 	Returndata []byte
 	Jumpdests  map[uint64]uint64
 	Gas        uint64
-	Stopped    bool		
+	Stopped    bool
 }
 
-func NewExecutionCtx(code []byte, stack *Stack, memory *Memory, storage *Storage, gas uint64) *ExecutionCtx {
+func NewExecutionCtx(code []byte, calldata *Calldata, stack *Stack, memory *Memory, storage *Storage, gas uint64) *ExecutionCtx {
 	return &ExecutionCtx{
 		code:       code,
+		Calldata:   calldata,
 		pc:         0,
 		Stack:      stack,
 		Memory:     memory,
@@ -74,19 +75,21 @@ func Run(ectx *ExecutionCtx) ([]byte, error) {
 	ectx.ValidJumpDestination()
 	fmt.Printf("set valid jump destination %v \n", ectx.Jumpdests)
 
-	for !ectx.Stopped {		
+	for !ectx.Stopped {
 		pcBefore := ectx.pc
 		inst := decodeOpcode(ectx)
-		
+
 		// deduct gas from the budget before executing
 		if ok := ectx.UseGas(inst.constantGas); !ok {
-			// without gas we can't proceed				
+			// without gas we can't proceed
 			ectx.Stopped = true
 			return nil, errors.New("out of gas")
 		}
 
+		// todo: use dynamic gas
+
 		inst.executeFn(ectx)
-		fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)		
+		fmt.Printf("%s @ pc=%d\n", inst.name, pcBefore)
 	}
 
 	return ectx.Returndata, nil
@@ -94,7 +97,7 @@ func Run(ectx *ExecutionCtx) ([]byte, error) {
 
 // Stop stops the execution of the bytecode in the VM
 func (ctx *ExecutionCtx) Stop() {
-	ctx.Stopped = true	
+	ctx.Stopped = true
 }
 
 // ValidJumpDestination iterates over the bytecode.
@@ -125,7 +128,7 @@ func (ctx *ExecutionCtx) ValidJumpDestination() {
 
 // ReadCode returns the next numBytes from the code
 // buffer as an integer and advances pc by numBytes
-func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {	
+func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {
 	codeSegment := ctx.code[ctx.pc : ctx.pc+numBytes]
 	codeHex := fmt.Sprintf("0x%x", ctx.code)
 	fmt.Printf("reading code: %s, bytes: %d, segment: %s\n", codeHex, numBytes, codeSegment)
@@ -139,7 +142,7 @@ func (ctx *ExecutionCtx) ReadCode(numBytes uint64) byte {
 // to be returned by the evm
 func (ctx *ExecutionCtx) SetReturnData(offset, length uint64) {
 	ctx.Returndata = ctx.Memory.LoadRange(offset, length)
-	ctx.Stopped = true	
+	ctx.Stopped = true
 }
 
 // SetProgramCounter sets the PC in the execution context

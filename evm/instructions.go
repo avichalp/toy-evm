@@ -53,6 +53,7 @@ func Init() {
 		0x82: {0x82, "DUP3", opDup3, GasFastestStep},
 		0x90: {0x90, "SWAP1", OpSwap1, GasFastestStep},
 		0x35: {0x35, "CALLDATALOAD", opCallDataLoad, GasFastestStep},
+		0x36: {0x36, "CALLDATASIZE", opCallDataSize, GasQuickStep},
 	}
 
 }
@@ -173,4 +174,8 @@ func opCallDataLoad(ctx *ExecutionCtx) {
 	if offset, overflow := ctx.Stack.Pop().Uint64WithOverflow(); !overflow {
 		ctx.Stack.Push(ctx.Calldata.ReadWord(offset))
 	}
+}
+
+func opCallDataSize(ctx *ExecutionCtx) {
+	ctx.Stack.Push(uint256.NewInt(ctx.Calldata.Size()))
 }
