@@ -161,3 +161,13 @@ func TestMemoryIncrementsForLoadWord(t *testing.T) {
 		})
 	}
 }
+
+func TestMemoryString(t *testing.T) {
+	memory := NewMemory()
+	memory.StoreByte(0, 0x01)
+	memory.StoreByte(1, 0x02)
+	memory.StoreByte(2, 0x03)
+	memory.StoreByte(3, 0x04)
+
+	assert.Equal(t, fmt.Sprintf("memory: %s", memory.data), memory.String())
+}

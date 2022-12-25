@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"fmt"
+
 	"github.com/holiman/uint256"
 )
 
@@ -32,7 +34,8 @@ func (c *Calldata) Size() uint64 {
 func NewCalldata(calldataHex string) *Calldata {
 	// length of calldataHex should be a multiple of 64 (32 bytes)
 	if len(calldataHex)%64 != 0 {
-		panic("calldataHex should be a multiple of 32 bytes")
+		errMsg := fmt.Errorf("calldataHex should be a multiple of 32 bytes")
+		panic(errMsg)
 	}
 	return &Calldata{
 		data: HexToBytes(calldataHex),

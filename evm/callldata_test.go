@@ -23,6 +23,7 @@ func TestReadByte(t *testing.T) {
 	assert.Equal(t, byte(3), callData.ReadByte(2))
 	assert.Equal(t, byte(4), callData.ReadByte(3))
 	assert.Equal(t, byte(5), callData.ReadByte(4))
+	assert.Equal(t, byte(0), callData.ReadByte(51))
 }
 
 // TestReadWord tests the ReadWord function bound to CallData struct.
@@ -58,4 +59,29 @@ func TestSize(t *testing.T) {
 		})
 	calldata := NewCalldata(data)
 	assert.Equal(t, uint64(32), calldata.Size())
+}
+
+// TestNewCalldata tests the NewCalldata function that creates a new Calldata struct.
+func TestNewCalldata(t *testing.T) {
+	data := fmt.Sprintf("%x",
+		[]byte{
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 1, 2, 3, 4, 5,
+		})
+	calldata := NewCalldata(data)
+	assert.Equal(t, data, fmt.Sprintf("%x", calldata.data))
+	assert.Equal(t, uint64(32), calldata.Size())
+
+	assert.PanicsWithError(
+		t,
+		"calldataHex should be a multiple of 32 bytes",
+		func() {
+			NewCalldata(fmt.Sprintf("%x",
+				[]byte{
+					0, 0, 0, 1, 2, 3, 4, 5,
+				}))
+		})
+
 }

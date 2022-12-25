@@ -78,3 +78,12 @@ func TestPeek(t *testing.T) {
 		stack.Peek(0)
 	})
 }
+
+func TestStackString(t *testing.T) {
+	stack := NewStack()
+	item1 := uint256.NewInt(1)
+	stack.Push(item1)
+	item2 := uint256.NewInt(2)
+	stack.Push(item2)
+	assert.Equal(t, "stack: [1 2]", stack.String())
+}

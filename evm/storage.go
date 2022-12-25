@@ -33,7 +33,7 @@ func (s *Storage) Put(slot *uint256.Int, value *uint256.Int) {
 func (s *Storage) String() string {
 	strs := []string{"storage: \n"}
 	for k, v := range s.data {
-		strs = append(strs, fmt.Sprintf("%d: %d\n", k, v))
+		strs = append(strs, fmt.Sprintf("%d: %d\n", k.Uint64(), v))
 	}
 	return strings.Join(strs, "")
 }
