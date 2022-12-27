@@ -16,7 +16,7 @@ type expected struct {
 	gasLeft    uint64
 }
 
-func TestRunSucess(t *testing.T) {
+func TestRunSuccess(t *testing.T) {
 	Init()
 	t.Cleanup(func() {
 		InstructionSet = make(map[byte]Instruction)
@@ -44,6 +44,21 @@ func TestRunSucess(t *testing.T) {
 				memory:     append([]byte{42}, zeroWord...)[:32],
 				returndata: []byte{42},
 				gasLeft:    1,
+			},
+		},
+		{
+			// Muliply 6 * 7 and return the result
+			//
+			// 60 02
+			// 60 04
+			// 04
+			code: HexToBytes("6002600404"),
+			gas:  11,
+			expected: expected{
+				stack:      []*uint256.Int{uint256.NewInt(2)},
+				memory:     []byte{},
+				returndata: []byte{},
+				gasLeft:    0,
 			},
 		},
 		{

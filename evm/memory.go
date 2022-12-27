@@ -64,7 +64,7 @@ func (m *Memory) StoreWord(offset uint64, value uint256.Int) {
 
 func (m *Memory) LoadRange(offset uint64, length uint64) []byte {
 	m.expandIfNeeded(offset + length - 1)
-return m.data[offset : offset+length]
+	return m.data[offset : offset+length]
 }
 
 func (m *Memory) LoadWord(offset uint64) *uint256.Int {

@@ -129,11 +129,11 @@ func opMload(ctx *ExecutionCtx) {
 }
 
 func opMstore8(ctx *ExecutionCtx) {
-	op1, op2 := ctx.Stack.Pop(), ctx.Stack.Pop()
+	offset, value := ctx.Stack.Pop(), ctx.Stack.Pop()
 	// MSTORE8 pops an offset and a word from the stack,
 	// and stores the lowest byte of that word in memory
-	op2.Mod(op2, uint256.NewInt(256))
-	ctx.Memory.StoreByte(op1.Uint64(), uint8(op2.Uint64()))
+	value.Mod(value, uint256.NewInt(256))
+	ctx.Memory.StoreByte(offset.Uint64(), uint8(value.Uint64()))
 }
 
 func opMstore(ctx *ExecutionCtx) {
