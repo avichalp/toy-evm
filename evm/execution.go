@@ -41,7 +41,7 @@ func decodeOpcode(ctx *ExecutionCtx) Instruction {
 	if ctx.pc >= uint64(len(ctx.code)) {
 		inst, ok := InstructionSet[0]
 		if !ok {
-			panic("Cannot find STOP OPCODE in Instruction Set")
+			panic(errors.New("cannot find STOP OPCODE in Instruction Set"))
 		}
 		return inst
 	}

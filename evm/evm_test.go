@@ -18,6 +18,9 @@ type expected struct {
 
 func TestRunSucess(t *testing.T) {
 	Init()
+	t.Cleanup(func() {
+		InstructionSet = make(map[byte]Instruction)
+	})
 	var tests = []struct {
 		code []byte
 		gas  uint64
@@ -141,4 +144,106 @@ func TestRunSucess(t *testing.T) {
 			assert.Equal(t, tt.expected.returndata, ectx.Returndata)
 		})
 	}
+}
+
+func TestRunFailure(t *testing.T) {
+	Init()
+	t.Cleanup(func() {
+		InstructionSet = make(map[byte]Instruction)
+	})
+	var tests = []struct {
+		code []byte
+		gas  uint64
+	}{
+		{
+			// invalid opcode
+			code: HexToBytes("8d"),
+			gas:  10,
+		},
+	}
+
+	for _, tt := range tests {
+		testname := fmt.Sprintf("%X", tt.code)
+		t.Run(testname, func(t *testing.T) {
+			ectx := NewExecutionCtx(
+				tt.code,
+				NewCalldata("abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"),
+				NewStack(),
+				NewMemory(),
+				NewStorage(),
+				tt.gas,
+			)
+			assert.PanicsWithError(
+				t,
+				fmt.Sprintf("inst not found for opcode %d", tt.code[0]),
+				func() { Run(ectx) },
+			)
+
+		})
+	}
+}
+
+func TestRunFailureInvalidPC(t *testing.T) {
+	var tests = []struct {
+		code []byte
+		gas  uint64
+	}{
+		{
+			// invalid opcode
+			code: HexToBytes("00"),
+			gas:  10,
+		},
+	}
+
+	for _, tt := range tests {
+		testname := fmt.Sprintf("%X", tt.code)
+		t.Run(testname, func(t *testing.T) {
+			ectx := NewExecutionCtx(
+				tt.code,
+				NewCalldata("abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"),
+				NewStack(),
+				NewMemory(),
+				NewStorage(),
+				tt.gas,
+			)
+			// set and invalid value of pc such that is exceeds the length of the code
+			ectx.pc = 5
+			assert.PanicsWithError(
+				t,
+				"cannot find STOP OPCODE in Instruction Set",
+				func() { Run(ectx) },
+			)
+		})
+	}
+}
+
+func TestHexToBytes(t *testing.T) {
+	var tests = []struct {
+		hex   string
+		bytes []byte
+	}{
+		{
+			hex:   "01",
+			bytes: []byte{1},
+		},
+		{
+			hex:   "ff",
+			bytes: []byte{255},
+		},
+	}
+	for _, tt := range tests {
+		testname := fmt.Sprintf("%x", tt.hex)
+		t.Run(testname, func(t *testing.T) {
+			assert.Equal(t, tt.bytes, HexToBytes(tt.hex))
+		})
+	}
+
+	assert.PanicsWithError(
+		t,
+		"encoding/hex: odd length hex string",
+		func() {
+			HexToBytes("3")
+		},
+	)
+
 }

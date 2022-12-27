@@ -93,7 +93,7 @@ func opSub(ctx *ExecutionCtx) {
 func opDiv(ctx *ExecutionCtx) {
 	op1, op2 := ctx.Stack.Pop(), ctx.Stack.Pop()
 	result := uint256.NewInt(0)
-	mod := uint256.NewInt(uint64(math.Pow(2, 256)))	
+	mod := uint256.NewInt(uint64(math.Pow(2, 256)))
 	result.Div(op1, op2)
 	result.Mod(result, mod)
 	ctx.Stack.Push(result)
