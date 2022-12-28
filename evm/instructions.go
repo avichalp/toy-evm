@@ -48,13 +48,14 @@ func Init() {
 		0x55: {0x55, "SSTORE", opSstore, 0},
 		0x58: {0x58, "PC", opProgramCounter, GasQuickStep},
 		0x59: {0x59, "MSIZE", opMsize, GasQuickStep},
+		0x5a: {0x5a, "GAS", opGas, GasQuickStep},
 		0x5B: {0x5B, "JUMPDEST", opJumpdest, 1},
 		0x80: {0x80, "DUP1", opDup1, GasFastestStep},
 		0x81: {0x81, "DUP2", opDup2, GasFastestStep},
 		0x82: {0x82, "DUP3", opDup3, GasFastestStep},
 		0x90: {0x90, "SWAP1", OpSwap1, GasFastestStep},
-		0x35: {0x35, "CALLDATALOAD", opCallDataLoad, GasFastestStep},
-		0x36: {0x36, "CALLDATASIZE", opCallDataSize, GasQuickStep},
+		0x35: {0x35, "CALLDATALOAD", opCalldataLoad, GasFastestStep},
+		0x36: {0x36, "CALLDATASIZE", opCalldataSize, GasQuickStep},
 	}
 
 }
@@ -178,7 +179,7 @@ func OpSwap1(ctx *ExecutionCtx) {
 	ctx.Stack.Swap(1)
 }
 
-func opCallDataLoad(ctx *ExecutionCtx) {
+func opCalldataLoad(ctx *ExecutionCtx) {
 	// geth limits the size of calldata to uint64
 	// https://github.com/ethereum/go-ethereum/blob/440c9fcf75d9d5383b72646a65d5e21fa7ab6a26/core/vm/instructions.go
 	if offset, overflow := ctx.Stack.Pop().Uint64WithOverflow(); !overflow {
@@ -186,6 +187,10 @@ func opCallDataLoad(ctx *ExecutionCtx) {
 	}
 }
 
-func opCallDataSize(ctx *ExecutionCtx) {
+func opCalldataSize(ctx *ExecutionCtx) {
 	ctx.Stack.Push(uint256.NewInt(ctx.Calldata.Size()))
+}
+
+func opGas(ctx *ExecutionCtx) {
+	ctx.Stack.Push(uint256.NewInt(ctx.Gas))
 }

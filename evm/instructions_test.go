@@ -186,3 +186,57 @@ func TestOpProgramCounter(t *testing.T) {
 	opProgramCounter(ctx)
 	assert.Equal(t, uint64(0), ctx.pc)
 }
+
+func TestOpMsize(t *testing.T) {
+	ctx := &ExecutionCtx{
+		Stack:  NewStack(),
+		Memory: NewMemory(),
+	}
+	num, _ := uint256.FromHex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	ctx.Memory.StoreWord(0, *num)
+	opMsize(ctx)
+	assert.Equal(t, uint256.NewInt(32), ctx.Stack.Pop())
+
+	// overwrite memory with 1
+	ctx.Memory.StoreWord(0, *uint256.NewInt(1))
+	opMsize(ctx)
+	assert.Equal(t, uint256.NewInt(32), ctx.Stack.Pop())
+}
+
+func TestOpGas(t *testing.T) {
+	ctx := &ExecutionCtx{
+		Stack: NewStack(),
+		Gas:   1000,
+	}
+	opGas(ctx)
+	assert.Equal(t, uint64(1000), ctx.Stack.Pop().Uint64())
+}
+
+func TestOpCalldataSize(t *testing.T) {
+	// dummy 32byte as a hex string
+	dummyCalldata := "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
+	ctx := &ExecutionCtx{
+		Stack:    NewStack(),
+		Calldata: NewCalldata(dummyCalldata),
+	}
+	opCalldataSize(ctx)
+	assert.Equal(t, uint256.NewInt(32), ctx.Stack.Pop())
+}
+
+func TestOpCalldataLoad(t *testing.T) {
+	dummyCalldata := "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234"
+	ctx := &ExecutionCtx{
+		Stack:    NewStack(),
+		Memory:   NewMemory(),
+		Calldata: NewCalldata(dummyCalldata),
+	}
+	ctx.Stack.Push(uint256.NewInt(0))
+	opCalldataLoad(ctx)
+	bigNum, _ := uint256.FromHex("0x" + dummyCalldata)
+	assert.Equal(t, bigNum, ctx.Stack.Pop())
+
+	num, _ := uint256.FromHex("0x10000000000000000")
+	ctx.Stack.Push(num)
+	opCalldataLoad(ctx)
+	assert.Equal(t, 0, len(ctx.Stack.data))
+}
