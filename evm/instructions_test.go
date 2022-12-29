@@ -240,3 +240,16 @@ func TestOpCalldataLoad(t *testing.T) {
 	opCalldataLoad(ctx)
 	assert.Equal(t, 0, len(ctx.Stack.data))
 }
+
+func TestOpCodeSize(t *testing.T) {
+	ctx := &ExecutionCtx{
+		Stack: NewStack(),
+		code:  []byte{0x01, 0x02, 0x03},
+	}
+	opCodeSize(ctx)
+	assert.Equal(t, uint256.NewInt(3), ctx.Stack.Pop())
+
+	ctx.code = []byte{}
+	opCodeSize(ctx)
+	assert.Equal(t, uint256.NewInt(0), ctx.Stack.Pop())
+}

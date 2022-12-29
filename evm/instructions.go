@@ -56,6 +56,7 @@ func Init() {
 		0x90: {0x90, "SWAP1", OpSwap1, GasFastestStep},
 		0x35: {0x35, "CALLDATALOAD", opCalldataLoad, GasFastestStep},
 		0x36: {0x36, "CALLDATASIZE", opCalldataSize, GasQuickStep},
+		0x38: {0x38, "CODESIZE", opCodeSize, GasQuickStep},
 	}
 
 }
@@ -193,4 +194,8 @@ func opCalldataSize(ctx *ExecutionCtx) {
 
 func opGas(ctx *ExecutionCtx) {
 	ctx.Stack.Push(uint256.NewInt(ctx.Gas))
+}
+
+func opCodeSize(ctx *ExecutionCtx) {
+	ctx.Stack.Push(uint256.NewInt(uint64(len(ctx.code))))
 }
