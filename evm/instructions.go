@@ -37,6 +37,7 @@ func Init() {
 		0x02: {0x02, "MUL", opMul, GasFastStep},
 		0x03: {0x03, "SUB", opSub, GasFastestStep},
 		0x04: {0x04, "DIV", opDiv, GasFastStep},
+		0x06: {0x06, "MOD", opMod, GasFastStep},
 		0x60: {0x60, "PUSH1", opPush1, GasFastestStep},
 		0xF3: {0xF3, "RETURN", opReturn, 0},
 		0x56: {0x56, "JUMP", opJump, GasMidStep},
@@ -98,6 +99,15 @@ func opDiv(ctx *ExecutionCtx) {
 	mod := uint256.NewInt(uint64(math.Pow(2, 256)))
 	result.Div(op1, op2)
 	result.Mod(result, mod)
+	ctx.Stack.Push(result)
+}
+
+func opMod(ctx *ExecutionCtx) {
+	op1, op2 := ctx.Stack.Pop(), ctx.Stack.Pop()
+	// if op2 equals 0 the output is 0
+	result := uint256.NewInt(0)
+	result.Mod(op1, op2)
+	result.Mod(result, uint256.NewInt(uint64(math.Pow(2, 256))))
 	ctx.Stack.Push(result)
 }
 

@@ -47,6 +47,21 @@ func TestOpDiv(t *testing.T) {
 	assert.Equal(t, uint256.NewInt(0), ctx.Stack.Pop())
 }
 
+func TestOpMod(t *testing.T) {
+	ctx := &ExecutionCtx{
+		Stack: NewStack(),
+	}
+	ctx.Stack.Push(uint256.NewInt(3))
+	ctx.Stack.Push(uint256.NewInt(6))
+	opMod(ctx)
+	assert.Equal(t, uint256.NewInt(0), ctx.Stack.Pop())
+
+	ctx.Stack.Push(uint256.NewInt(0))
+	ctx.Stack.Push(uint256.NewInt(6))
+	opMod(ctx)
+	assert.Equal(t, uint256.NewInt(0), ctx.Stack.Pop())
+}
+
 func TestOpReturn(t *testing.T) {
 	ctx := &ExecutionCtx{
 		Stack:  NewStack(),
