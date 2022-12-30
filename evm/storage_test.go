@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/holiman/uint256"
@@ -22,5 +23,8 @@ func TestStorageString(t *testing.T) {
 	storage.Put(uint256.NewInt(0), uint256.NewInt(1))
 	storage.Put(uint256.NewInt(1), uint256.NewInt(2))
 	storage.Put(uint256.NewInt(2), uint256.NewInt(3))
-	assert.Equal(t, "storage: \n0: 1\n1: 2\n2: 3\n", storage.String())
+
+	assert.True(t, strings.Contains(storage.String(), "0: 1"))
+	assert.True(t, strings.Contains(storage.String(), "1: 2"))
+	assert.True(t, strings.Contains(storage.String(), "2: 3"))
 }
