@@ -62,6 +62,24 @@ func TestOpMod(t *testing.T) {
 	assert.Equal(t, uint256.NewInt(0), ctx.Stack.Pop())
 }
 
+func TestOpAddMod(t *testing.T) {
+	ctx := &ExecutionCtx{
+		Stack: NewStack(),
+	}
+	ctx.Stack.Push(uint256.NewInt(1))
+	ctx.Stack.Push(uint256.NewInt(2))
+	ctx.Stack.Push(uint256.NewInt(3))
+	opAddMod(ctx)
+	assert.Equal(t, uint256.NewInt(0), ctx.Stack.Pop())
+
+
+	ctx.Stack.Push(uint256.NewInt(0))
+	ctx.Stack.Push(uint256.NewInt(21))
+	ctx.Stack.Push(uint256.NewInt(20))
+	opAddMod(ctx)
+	assert.Equal(t, uint256.NewInt(0), ctx.Stack.Pop())
+}
+
 func TestOpReturn(t *testing.T) {
 	ctx := &ExecutionCtx{
 		Stack:  NewStack(),

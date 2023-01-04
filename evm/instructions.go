@@ -37,6 +37,7 @@ func Init() {
 		0x02: {0x02, "MUL", opMul, GasFastStep},
 		0x03: {0x03, "SUB", opSub, GasFastestStep},
 		0x04: {0x04, "DIV", opDiv, GasFastStep},
+		0x08: {0x08, "ADDMOD", opAddMod, GasMidStep},
 		0x06: {0x06, "MOD", opMod, GasFastStep},
 		0x60: {0x60, "PUSH1", opPush1, GasFastestStep},
 		0xF3: {0xF3, "RETURN", opReturn, 0},
@@ -94,10 +95,10 @@ func opSub(ctx *ExecutionCtx) {
 }
 
 func opDiv(ctx *ExecutionCtx) {
-	op1, op2 := ctx.Stack.Pop(), ctx.Stack.Pop()
+	n, d := ctx.Stack.Pop(), ctx.Stack.Pop()
 	result := uint256.NewInt(0)
 	mod := uint256.NewInt(uint64(math.Pow(2, 256)))
-	result.Div(op1, op2)
+	result.Div(n, d)
 	result.Mod(result, mod)
 	ctx.Stack.Push(result)
 }
@@ -108,6 +109,18 @@ func opMod(ctx *ExecutionCtx) {
 	result := uint256.NewInt(0)
 	result.Mod(op1, op2)
 	result.Mod(result, uint256.NewInt(uint64(math.Pow(2, 256))))
+	ctx.Stack.Push(result)
+}
+
+func opAddMod(ctx *ExecutionCtx) {
+	op1, op2, op3 := ctx.Stack.Pop(), ctx.Stack.Pop(), ctx.Stack.Pop()
+	result := uint256.NewInt(0)
+	if op3.Eq(uint256.NewInt(0)) {
+		ctx.Stack.Push(result)
+		return
+	}
+	result.Add(op1, op2)
+	result.Mod(result, op3)
 	ctx.Stack.Push(result)
 }
 
