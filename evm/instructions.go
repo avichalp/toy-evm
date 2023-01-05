@@ -2,7 +2,6 @@ package evm
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/holiman/uint256"
 )
@@ -38,6 +37,7 @@ func Init() {
 		0x03: {0x03, "SUB", opSub, GasFastestStep},
 		0x04: {0x04, "DIV", opDiv, GasFastStep},
 		0x08: {0x08, "ADDMOD", opAddMod, GasMidStep},
+		0x09: {0x09, "MULMOD", opMulMod, GasMidStep},
 		0x06: {0x06, "MOD", opMod, GasFastStep},
 		0x60: {0x60, "PUSH1", opPush1, GasFastestStep},
 		0xF3: {0xF3, "RETURN", opReturn, 0},
@@ -72,34 +72,28 @@ func opPush1(ctx *ExecutionCtx) {
 func opAdd(ctx *ExecutionCtx) {
 	op1, op2 := ctx.Stack.Pop(), ctx.Stack.Pop()
 	result := uint256.NewInt(0)
-	mod := uint256.NewInt(uint64(math.Pow(2, 256)))
-	result.AddMod(op1, op2, mod)
+	result.Add(op1, op2)
 	ctx.Stack.Push(result)
 }
 
 func opMul(ctx *ExecutionCtx) {
 	op1, op2 := ctx.Stack.Pop(), ctx.Stack.Pop()
 	result := uint256.NewInt(0)
-	mod := uint256.NewInt(uint64(math.Pow(2, 256)))
-	result.MulMod(op1, op2, mod)
+	result.Mul(op1, op2)
 	ctx.Stack.Push(result)
 }
 
 func opSub(ctx *ExecutionCtx) {
 	op1, op2 := ctx.Stack.Pop(), ctx.Stack.Pop()
 	result := uint256.NewInt(0)
-	mod := uint256.NewInt(uint64(math.Pow(2, 256)))
 	result.Sub(op1, op2)
-	result.Mod(result, mod)
 	ctx.Stack.Push(result)
 }
 
 func opDiv(ctx *ExecutionCtx) {
 	n, d := ctx.Stack.Pop(), ctx.Stack.Pop()
 	result := uint256.NewInt(0)
-	mod := uint256.NewInt(uint64(math.Pow(2, 256)))
 	result.Div(n, d)
-	result.Mod(result, mod)
 	ctx.Stack.Push(result)
 }
 
@@ -108,19 +102,20 @@ func opMod(ctx *ExecutionCtx) {
 	// if op2 equals 0 the output is 0
 	result := uint256.NewInt(0)
 	result.Mod(op1, op2)
-	result.Mod(result, uint256.NewInt(uint64(math.Pow(2, 256))))
 	ctx.Stack.Push(result)
 }
 
 func opAddMod(ctx *ExecutionCtx) {
 	op1, op2, op3 := ctx.Stack.Pop(), ctx.Stack.Pop(), ctx.Stack.Pop()
 	result := uint256.NewInt(0)
-	if op3.Eq(uint256.NewInt(0)) {
-		ctx.Stack.Push(result)
-		return
-	}
-	result.Add(op1, op2)
-	result.Mod(result, op3)
+	result.AddMod(op1, op2, op3)
+	ctx.Stack.Push(result)
+}
+
+func opMulMod(ctx *ExecutionCtx) {
+	op1, op2, op3 := ctx.Stack.Pop(), ctx.Stack.Pop(), ctx.Stack.Pop()
+	result := uint256.NewInt(0)
+	result.MulMod(op1, op2, op3)
 	ctx.Stack.Push(result)
 }
 
